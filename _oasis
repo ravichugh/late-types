@@ -10,7 +10,7 @@ BuildTools:
   ocamlbuild,
   ocamldoc
 
-Executable alligator
+Executable types
   Path: src
   MainIs: types.ml
   Install: false
