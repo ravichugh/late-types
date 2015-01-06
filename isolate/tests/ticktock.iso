@@ -1,0 +1,113 @@
+
+(*** ESOP Example, Part 1 ***)
+
+type _Tick(A) = { tick: (A->(int->str)) }
+type _Tock(A) = { tock: (A->(int->str)) }
+
+let tick = pre (this: A <: _Tock(A)) -> fun (n:int) ->
+  if n <= 0 then "" else "tick " ^ this$tock(n) fi in
+
+let tock = pre (this: A<: _Tick(A)) -> fun (n:int) ->
+  if n <= 0 then "" else "tock " ^ this$tick(n-1) fi in
+
+let tock' = pre (this: A<: _Tick(A)) -> fun (n:int) ->
+  this$tick(n-1) in
+
+let const  = fun (b:bool) -> pre (this:A<:{}) -> fun (dummy:int) -> b in
+let true_  = const (true) in
+let false_ = const (false) in
+
+let normalTicker = { tick = tick; tock = tock ; loud = true_  } in
+let quietTicker  = { tick = tick; tock = tock'; loud = false_ } in
+
+let _ = print "normalTicker # tick(2)" (normalTicker # tick(2)) in
+let _ = print "quietTicker # tick(2)" (quietTicker  # tick(2)) in
+
+(*** ESOP Example, Part 2 ***)
+
+let wrap = fun A -> fun B -> fun C -> fun C' ->
+           fun (g: (C -> C')) ->
+           fun (f: (A -> (B -> C))) ->
+  fun (x:A) -> fun (y:B) ->
+    g (f(x)(y)) in
+
+let exclaim = fun A -> fun B ->
+  wrap [A] [B] [str] [str] (fun (s:str) -> "! " ^ s) in
+
+type _TickerVol() =
+  mu A. { tick: (A->(int->str))
+        ; tock: (A->(int->str))
+        ; loud: (A->(int->bool)) }   (* dummy int as unit *)
+
+let loudTicker =
+  let o_  = close normalTicker in
+  let o__ = unfold o_ in
+    fold [_TickerVol()]
+      { tick = exclaim [_TickerVol()] [int] (o__.tick)
+      ; tock = exclaim [_TickerVol()] [int] (o__.tock)
+      ; loud = o__.loud } in
+
+let _ = print "loudTicker $ tick(2)" (loudTicker $ tick(2)) in
+
+type _PreTick() = (A:_Tock(A)) => (int -> str)
+type _PreTock() = (A:_Tick(A)) => (int -> str)
+type _PreLoud() = (A:{})       => (int -> bool)
+
+type _OpenTickerVol() =
+  { tick : _PreTick(); tock : _PreTock(); loud : _PreLoud() }
+
+let loudClosedTicker =
+  fun (ticker: _OpenTickerVol()) ->
+    let o_  = close ticker in
+    let o__ = unfold o_ in
+      fold [_TickerVol()]
+        { tick = exclaim [_TickerVol()] [int] (o__.tick)
+        ; tock = exclaim [_TickerVol()] [int] (o__.tock)
+        ; loud = (fun (this:_TickerVol()) -> fun (dummy:int) -> true) } in
+
+let _ = print "loudClosedTicker(normalTicker) $ tick(2)"
+              (loudClosedTicker(normalTicker) $ tick(2)) in
+let _ = print "loudClosedTicker(quietTicker) $ tick(2)"
+              (loudClosedTicker(quietTicker) $ tick(2)) in
+
+(*** ESOP Example, Part 3 ***)
+
+let wrapTock =
+  fun B -> fun C -> fun C' ->
+    fun (g: (C -> C')) ->
+    fun (f: (A:{tock:(A->(B->C))}) => (B->C) ) ->
+      pre (this:A<:{tock:(A->(B->C))}) -> fun (x:B) -> g (f[A](this)(x))
+in
+
+let wrapTick =
+  fun B -> fun C -> fun C' ->
+    fun (g: (C -> C')) ->
+    fun (f: (A:{tick:(A->(B->C))}) => (B->C) ) ->
+      pre (this:A<:{tick:(A->(B->C))}) -> fun (x:B) -> g (f[A](this)(x))
+in
+
+let exclaimSimple = fun (s:str) -> "! " ^ s in 
+
+let loudTicker' =
+  { tick = wrapTock[int][str][str] (exclaimSimple) (tick)
+  ; tock = wrapTick[int][str][str] (exclaimSimple) (tock)
+  ; loud = true_ } in
+
+let _ = print "loudTicker' # tick(2)" (loudTicker' # tick(2)) in
+
+let loudOpenTicker =
+  fun (ticker : _OpenTickerVol()) ->
+    { tick = wrapTock[int][str][str] (exclaimSimple) (ticker.tick)
+    ; tock = wrapTick[int][str][str] (exclaimSimple) (ticker.tock)
+    ; loud = true_ } in
+
+let _ = print "loudOpenTicker(normalTicker) # tick(2)"
+              (loudOpenTicker(normalTicker) # tick(2)) in
+let _ = print "loudOpenTicker(quietTicker) # tick(2)"
+              (loudOpenTicker(quietTicker) # tick(2)) in
+let _ = print "loudOpenTicker(loudTicker') # tick(2)"
+              (loudOpenTicker(loudTicker') # tick(2)) in
+let _ = print "loudOpenTicker(loudOpenTicker(loudTicker')) # tick(2)"
+              (loudOpenTicker(loudOpenTicker(loudTicker')) # tick(2)) in
+
+0

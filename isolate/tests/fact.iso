@@ -1,0 +1,26 @@
+
+type _ObjF(A) = {f:(A->(int->int))}
+type _ObjG(A) = {g:(A->(int->int))}
+
+let fact_f = pre (this: A <: _ObjF(A)) -> fun (n:int) ->
+  if n <= 0 then 1 else n * (unfold this).f(this)(n-1) fi in
+
+let fact_g = pre (this: A <: _ObjG(A)) -> fun (n:int) ->
+  if n <= 0 then 1 else n * (unfold this).g(this)(n-1) fi in
+
+let obj_f  = {f=fact_f} in
+let obj_g  = {g=fact_g} in
+let obj_fg = {f=fact_f; g=fact_g} in
+let obj_gf = {f=fact_g; g=fact_f} in
+
+let _ = print (obj_f  # f(5)) in
+let _ = print (obj_g  # g(5)) in
+let _ = print (obj_fg # f(5)) in
+let _ = print (obj_gf # f(5)) in
+
+let _ = print ((close obj_f)  $ f(5)) in
+let _ = print ((close obj_g)  $ g(5)) in
+let _ = print ((close obj_fg) $ f(5)) in
+let _ = print ((close obj_gf) $ f(5)) in
+
+0

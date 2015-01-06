@@ -1,0 +1,4 @@
+let foo = pre (this:Self<:{f:(Self->(int->int))}) -> fun (x:int) ->
+  this$f(x) in
+let obj = {f=foo} in
+obj#f(0)
