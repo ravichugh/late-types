@@ -1,0 +1,16 @@
+OASISFormat: 0.3
+OCamlVersion: >= 4.01.0
+Name:        late-types
+Version:     0.0.1
+Synopsis:    Late Types
+Authors:     Ravi Chugh & Friends
+License:     PROP
+Plugins:     META (0.3)
+BuildTools:
+  ocamlbuild,
+  ocamldoc
+
+Executable types
+  Path: src
+  MainIs: types.ml
+  Install: false
